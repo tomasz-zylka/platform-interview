@@ -1,0 +1,59 @@
+version: "3"
+networks:
+  chat:
+volumes:
+  localstack:
+
+services:
+  # Launch Redis used for syncing messages between copies of the client app
+  redis:
+    image: redis
+    networks:
+      - chat
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  # Launch a local instance of DynamoDB
+  localstack:
+    image: localstack/localstack:latest
+    networks:
+      - chat
+    environment:
+      - EDGE_PORT=4566
+      - HOSTNAME=localstack
+      - SERVICES=dynamodb
+    ports:
+      - 4566:4566
+    volumes:
+      - ./localstack:/docker-entrypoint-initaws.d
+      - localstack:/tmp/localstack
+    healthcheck:
+      test: ['CMD', 'bash', '-c', 'awslocal dynamodb describe-table --table-name test_Users --region eu-central-1 && awslocal dynamodb describe-table --table-name test_Messages --region eu-central-1']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  # The actual client application
+  client:
+    depends_on:
+      localstack:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - chat
+    build: ./src/client
+    image: ${CLIENT_IMAGE}
+    environment:
+      LOCAL: "true"
+      ENV_NAME: test
+      DYNAMODB_ENDPOINT: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    ports:
+      - 3000:3000

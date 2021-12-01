@@ -1,0 +1,47 @@
+#cloud-config
+
+#
+# Simple Docker Systemd Unit
+#
+output: { all: "| tee -a /var/log/cloud-init-output.log" }
+
+write_files:
+  - path: /etc/systemd/system/awschat.service
+    permissions: 0644
+    owner: root:root
+    content: |
+      [Unit]
+      Description=AWS Chat
+      Requires=docker.service
+      Requires=proc-sys-fs-binfmt_misc.mount
+      After=docker.service
+
+      [Service]
+      Restart=always
+      ExecStartPre=-/usr/bin/docker stop aws-chat
+      ExecStartPre=-/usr/bin/docker rm -f aws-chat
+      ExecStartPre=/bin/bash -c "/bin/aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${dockerImage}"
+      ExecStartPre=/usr/bin/docker pull ${dockerImage}
+      ExecStart=/bin/bash -c "docker run --name aws-chat \
+                              --env-file /home/ec2-user/awschat.env -p 80:3000 \
+                              ${dockerImage}"
+      ExecStop=/usr/bin/docker stop aws-chat
+
+      [Install]
+      WantedBy = multi-user.target
+
+  - path: /home/ec2-user/awschat.env
+    permissions: 0644
+    owner: ec2-user:ec2-user
+    content: |
+      REGION=eu-central-1
+      ENV_NAME=prod
+
+runcmd:
+  - 'yum -y update'
+  - 'amazon-linux-extras install docker'
+  - 'usermod -a -G docker ec2-user'
+  - 'systemctl daemon-reload'
+  - 'systemctl enable docker'
+  - 'systemctl start docker'
+  - 'systemctl start awschat'

@@ -1,0 +1,12 @@
+version: "3"
+networks:
+  chat:
+
+services:
+  # The test suite
+  test:
+    networks:
+      - chat
+    build: ./src/test-suite
+    environment:
+      SELF_URL: http://client:3000
