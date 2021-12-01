@@ -1,22 +1,4 @@
 #
-# Data Resource for latest Amazon Linux 2 AMI
-#
-data "aws_ami" "amazon_linux_2" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "owner-alias"
-    values = ["amazon"]
-  }
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm*"]
-  }
-}
-
-#
 # Data Resource for default subnet
 #
 resource "aws_default_subnet" "euce1" {
@@ -136,7 +118,7 @@ resource "aws_iam_instance_profile" "aws_chat" {
 #
 resource "aws_launch_template" "aws_chat" {
   name_prefix   = "aws-chat-"
-  image_id      = data.aws_ami.amazon_linux_2.image_id
+  image_id      = //todo!
   instance_type = "t2.small"
   key_name      = aws_key_pair.aws_chat.key_name
 
@@ -145,7 +127,7 @@ resource "aws_launch_template" "aws_chat" {
     ebs {
       volume_size = 20
       encrypted   = true
-      volume_type = "gp3"
+      volume_type = "gp2"
     }
   }
 
