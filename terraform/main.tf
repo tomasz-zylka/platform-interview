@@ -118,7 +118,7 @@ resource "aws_iam_instance_profile" "aws_chat" {
 #
 resource "aws_launch_template" "aws_chat" {
   name_prefix   = "aws-chat-"
-  image_id      = //todo!
+  image_id      = "ami-xxxxx"
   instance_type = "t2.small"
   key_name      = aws_key_pair.aws_chat.key_name
 
