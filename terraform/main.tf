@@ -114,11 +114,25 @@ resource "aws_iam_instance_profile" "aws_chat" {
 }
 
 #
+# AMI ID
+#
+data "aws_ami" "amazon-linux-2" {
+ most_recent = true
+
+ owners = ["amazon"]
+
+ filter {
+   name   = "name"
+   values = ["amzn2-ami-hvm*"]
+ }
+}
+
+#
 # Launch Template
 #
 resource "aws_launch_template" "aws_chat" {
   name_prefix   = "aws-chat-"
-  image_id      = "ami-xxxxx"
+  image_id      = data.aws_ami.amazon-linux-2.id
   instance_type = "t2.small"
   key_name      = aws_key_pair.aws_chat.key_name
 
