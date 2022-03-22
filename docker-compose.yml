@@ -55,5 +55,6 @@ services:
       DYNAMODB_ENDPOINT: http://localstack:4566
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
+      REDIS_ENDPOINT: redis
     ports:
       - 3000:3000

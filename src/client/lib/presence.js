@@ -3,7 +3,7 @@ var config = require('./config');
 
 function Presence() {
   this.client = redis.createClient({
-    host: 'redis'
+    host: process.env.REDIS_ENDPOINT
   });
 }
 module.exports = new Presence();
