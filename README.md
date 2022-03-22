@@ -33,6 +33,7 @@ To run integration tests execute:
 ```
 make test
 ```
+**Notice:** Test suite is designed in a way that test cases expect the running client app to be newly launched, therefore if chat users are already stored in db, then test cases will fail (as number of expected users will differ), etc.
 
 To stop the application execute:
 ```

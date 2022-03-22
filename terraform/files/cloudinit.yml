@@ -20,11 +20,14 @@ write_files:
       Restart=always
       ExecStartPre=-/usr/bin/docker stop aws-chat
       ExecStartPre=-/usr/bin/docker rm -f aws-chat
+      ExecStartPre=sudo mkdir /home/ec2-user/.docker
+      ExecStartPre=sudo chown ec2-user:ec2-user .docker
+      ExecStartPre=chmod 700 .docker
       ExecStartPre=/bin/bash -c "/bin/aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${dockerImage}"
       ExecStartPre=/usr/bin/docker pull ${dockerImage}
       ExecStart=/bin/bash -c "docker run --name aws-chat \
                               --env-file /home/ec2-user/awschat.env -p 80:3000 \
-                              ${dockerImage}"
+                              ${dockerImage} "
       ExecStop=/usr/bin/docker stop aws-chat
 
       [Install]
@@ -36,6 +39,8 @@ write_files:
     content: |
       REGION=eu-central-1
       ENV_NAME=prod
+      REDIS_ENDPOINT=${redisEndpoint}
+
 
 runcmd:
   - 'yum -y update'

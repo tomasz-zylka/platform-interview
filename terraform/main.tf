@@ -10,7 +10,7 @@ resource "aws_default_subnet" "euce1" {
 #
 resource "aws_key_pair" "aws_chat" {
   key_name   = "aws-chat"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCK+E7Sfdjr5vyeEuDPr/Ni7Oub7niy8BxwEkRKcHFKQtg7FGBbAIezLFttfBzggma5bgFQYDeniUSRDzXFyLUGu8gwmwWkQ5IOnynqnCK6NGl2lTTtJUzFbtKlOjsJ5a50oj1I4uBzqgR07c3MgnJ5h0qVnlFl40gBKr/XAuTwTvWUOaZ+w2jlkYnL+FLvm7+FoxC+ZwCpR0ALm1+SOc2c9n93QETPhLOrctr6rF9Zpp7gBq+TEAKF2mwPzriS4BzTzujHiXwNJtvcMerqS1XS8CKkLPNmHiDPNP5RgGKTYGtda1ca+awIgdnOPUUuJw2zDtObAqyYXckNNjeUr+Dr"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC739jbtjtMULeBkrvexh9no5yauukhzzu1xVhcspRTqGEYBhi9M8Gs+bOCI+A61xeZ0CBMaXqrWcD0G6kiQpzR9vjG8Vgq0WKslyUiT6wiPfxoD7bMT9RPkzCcByKEWwNuj3Mqra86lPmoOGQZzzywwnxj45qDVf+Mz3gL0BfSgOKdCnD37BHet6ieildAFibd+XqEVEXUY5bArW1npwrXGOsBIOtFoFOfr3/GxC6G/1WPynfaRuNP5ZfmV1jpcEW6fCkvs/7F14/ShF2XyuYCax+fMXZrH5mjrf1siXD5jBytHU1jSRieTmv1cmicA3PO6TTpD56+nJdlEIaT6OlkzRGT7hFzLrUzLyAA3updXzx34MH6GCzHXZ4OmsGmyUVINlbTFmXZQhteG5cOIMbX62AxT7PwB5NGouoGwbQ8m19s4MwiLNeiCgef87FDMNwdlEkA18RXjIqi4YsqRsND9s+pTQHtnupYaLpG+V6cJ8IcXAJ+jyMrO3rGeM6Jau8=  tomek@tomek-Dell-G15-5515"
 }
 
 #
@@ -20,6 +20,7 @@ data "template_file" "aws_chat" {
   template = file("files/cloudinit.yml")
   vars = {
     dockerImage   = local.docker_image
+    redisEndpoint = local.redis_endpoint
   }
 }
 
@@ -87,7 +88,10 @@ data "aws_iam_policy_document" "aws_chat" {
       "ecr:GetAuthorizationToken",
       "ecr:BatchCheckLayerAvailability",
       "ecr:BatchGetImage",
-      "ecr:GetDownloadUrlForLayer"
+      "ecr:GetDownloadUrlForLayer",
+      "dynamodb:Query",
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
     ]
     resources = [
       "*"
@@ -134,12 +138,12 @@ resource "aws_launch_template" "aws_chat" {
   name_prefix   = "aws-chat-"
   image_id      = data.aws_ami.amazon-linux-2.id
   instance_type = "t2.small"
-  key_name      = aws_key_pair.aws_chat.key_name
+  key_name      = "awschat"
 
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
-      volume_size = 20
+      volume_size = 10
       encrypted   = true
       volume_type = "gp2"
     }

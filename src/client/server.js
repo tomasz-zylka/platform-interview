@@ -108,9 +108,9 @@ io.on('connection', function(socket) {
     return callback(null, [
       {
         id: 'general',
-        name: 'General AWS',
-        preview: 'General AWS discussion',
-        image: '/images/aws.jpg',
+        name: 'Graphy',
+        preview: 'Platform',
+        image: '/images/graphy.png',
         status: 'none',
         onlineCount: 0
       },
