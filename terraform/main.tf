@@ -1,8 +1,16 @@
 #
 # Data Resource for default subnet
 #
-resource "aws_default_subnet" "euce1" {
+resource "aws_default_subnet" "euce1a" {
   availability_zone = "eu-central-1a"
+}
+
+resource "aws_default_subnet" "euce1b" {
+  availability_zone = "eu-central-1b"
+}
+
+resource "aws_default_subnet" "euce1c" {
+  availability_zone = "eu-central-1c"
 }
 
 #
@@ -41,6 +49,27 @@ resource "aws_security_group" "aws_chat" {
     protocol    = "tcp"
     from_port   = "80"
     to_port     = "80"
+    security_groups = [aws_security_group.aws_chat_lb.id]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+#
+# Load balancer: security group, load balancer, target group, listener
+#
+resource "aws_security_group" "aws_chat_lb" {
+  name = "aws-chat-lb"
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = "443"
+    to_port     = "443"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -49,6 +78,39 @@ resource "aws_security_group" "aws_chat" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_lb" "aws_chat" {
+  name               = "aws-chat"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.aws_chat_lb.id]
+  subnets            = [aws_default_subnet.euce1a.id, aws_default_subnet.euce1b.id, aws_default_subnet.euce1c.id]
+
+  enable_deletion_protection = true
+  tags = {
+    Environment = "production"
+  }
+}
+
+resource "aws_lb_target_group" "aws_chat" {
+  name     = "aws-chat"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_security_group.aws_chat_lb.vpc_id
+}
+
+resource "aws_lb_listener" "aws_chat" {
+  load_balancer_arn = aws_lb.aws_chat.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = "arn:aws:acm:eu-central-1:550346457415:certificate/96bf8b78-3a56-473c-914e-1f12e5a34079"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.aws_chat.arn
   }
 }
 
@@ -162,18 +224,25 @@ resource "aws_launch_template" "aws_chat" {
 #
 resource "aws_autoscaling_group" "aws_chat" {
   desired_capacity = 1
-  max_size         = 3
+  max_size         = 2
   min_size         = 1
 
-  # vpc_zone_identifier = module.vpc.private_subnets
-  # target_group_arns   = [aws_alb_target_group.app.arn]
+  target_group_arns   = [aws_lb_target_group.aws_chat.arn]
 
   launch_template {
     id      = aws_launch_template.aws_chat.id
     version = "$Latest"
   }
 
-  vpc_zone_identifier = [aws_default_subnet.euce1.id]
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+    }
+    triggers = ["tag"]
+  }
+
+  vpc_zone_identifier = [aws_default_subnet.euce1a.id, aws_default_subnet.euce1b.id, aws_default_subnet.euce1c.id]
 
   tag {
     key                 = "Name"
