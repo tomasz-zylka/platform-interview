@@ -106,7 +106,7 @@ resource "aws_lb_listener" "aws_chat" {
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-2016-08"
-  certificate_arn   = "arn:aws:acm:eu-central-1:550346457415:certificate/96bf8b78-3a56-473c-914e-1f12e5a34079"
+  certificate_arn   = local.certificate_arn
 
   default_action {
     type             = "forward"
